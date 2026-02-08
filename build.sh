@@ -14,6 +14,8 @@ if [ -z "$CONFIG" ]; then
     exit 1
 fi
 
+shift
+
 CONFIG_DIR="configs/$CONFIG"
 
 cd $rundir
@@ -22,6 +24,10 @@ if test -e "$CONFIG_DIR/tasmota-tag"; then
     cd Tasmota
     git fetch --all
     git checkout $(cat "../$CONFIG_DIR/tasmota-tag")
+    if [ $? -ne 0 ]; then
+        echo -e "Failed to checkout Tasmota tag $(cat "../$CONFIG_DIR/tasmota-tag")\n"
+        exit 1
+    fi
     cd $rundir
 fi
 
@@ -32,6 +38,8 @@ if test -e "$CONFIG_DIR/user_config_override.h"; then
     cp "$CONFIG_DIR/user_config_override.h" Tasmota/tasmota/user_config_override.h
     echo -e "Using your $CONFIG_DIR/user_config_override.h and overwriting the existing file\n"
 fi
+
+rm -f Tasmota/platformio_override.ini
 
 if test -e "$CONFIG_DIR/platformio_override.ini"; then
     echo -e "Compiling builds defined in $CONFIG_DIR/platformio_override.ini. Default file is overwritten.\n"
@@ -61,7 +69,7 @@ fi
 
 cd Tasmota
 
-pio run
+pio run "$@"
 
 if [ ! -z "$repo_sha" ]; then
     git checkout -f "$repo_sha"
